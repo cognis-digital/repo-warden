@@ -1,5 +1,7 @@
 # repo-warden
 
+[![CI](https://github.com/cognis-digital/repo-warden/actions/workflows/ci.yml/badge.svg)](https://github.com/cognis-digital/repo-warden/actions/workflows/ci.yml)
+
 **Access governance for the git repositories you already host. RFC 8628 device-flow auth, scoped revocable tokens, and branch protection you can drop in as a `pre-receive` hook — no forge migration.**
 
 You don't need to move off GitHub or GitLab to govern how agents and humans touch your code. `repo-warden` is a thin authorization layer that sits over the remotes you already run, so human pushes and agent access flow through one controlled, revocable path.
