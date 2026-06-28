@@ -6,7 +6,13 @@
 
 **Access governance for the git repositories you already host. RFC 8628 device-flow auth, scoped revocable tokens, and branch protection you can drop in as a `pre-receive` hook — no forge migration.**
 
-You don't need to move off GitHub or GitLab to govern how agents and humans touch your code. `repo-warden` is a thin authorization layer that sits over the remotes you already run, so human pushes and agent access flow through one controlled, revocable path.
+Ask yourself:
+
+- Are AI agents and humans pushing to the **same repos**, with the same blunt credentials and no per-action limits?
+- If an agent force-pushed `main` tonight, would anything **stop it** — or would you find out tomorrow?
+- Can you hand an agent access that's **scoped to one repo and instantly revocable**, without standing up a new git host?
+
+You don't need to move off GitHub or GitLab to fix that. `repo-warden` is a thin authorization layer over the remotes you already run, so human pushes and agent access flow through one controlled, revocable path:
 
 - **Device-flow onboarding (RFC 8628).** Agents and CI obtain access with the OAuth 2.0 Device Authorization Grant — the headless "here's a code, go approve it" flow — not a proprietary token handshake or an embedded secret.
 - **Scoped, revocable tokens bound to a namespace.** A token carries scopes (`repo:read`, `branch:push`, `branch:admin`, …) and a repo namespace glob (`acme/*`). Only a hash is stored; revocation is immediate.
