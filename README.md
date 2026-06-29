@@ -20,6 +20,18 @@ You don't need to move off GitHub or GitLab to fix that. `repo-warden` is a thin
 - **Drop-in enforcement.** Wire it as a server-side `pre-receive` hook on any git host and rejected pushes fail exactly where they should.
 - **Zero dependencies.** Pure standard library + SQLite.
 
+```mermaid
+flowchart LR
+    agent[AI agent / CI] -->|RFC 8628 device flow| df[DeviceFlow]
+    human[Human approver] -.approve code.-> df
+    df -->|scoped token| store[(Store<br/>hash-only, revocable)]
+    git[git push] -->|pre-receive hook| warden[Warden]
+    warden -->|authenticate| store
+    warden -->|BranchPolicy| dec{{allow / deny<br/>+ rule}}
+    dec -->|deny| reject[reject push]
+    dec -->|allow| land[ref update lands]
+```
+
 ## Install
 
 ```bash
@@ -90,6 +102,26 @@ The agent's token is read from `$REPO_WARDEN_TOKEN`. A force-push or a branch de
 
 Decision rules (each tagged for logging): `auth`, `namespace`, `read`, `push`, `protected-branch`, `force-push`, `delete-protected`.
 
+## Demos
+
+Five runnable scenarios in [`demos/`](demos/), each for a different audience.
+Every one builds its own throwaway in-memory warden (no files, no network),
+exits 0, and doubles as a smoke test. See [`docs/DEMOS.md`](docs/DEMOS.md) for
+the full write-up and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the
+pieces fit together.
+
+```bash
+PYTHONUTF8=1 python demos/run_all.py     # all five, end to end
+```
+
+| # | Scenario | Audience | Shows |
+|---|----------|----------|-------|
+| 1 | [`01_branch_protection_gate.py`](demos/01_branch_protection_gate.py) | Platform engineering | One policy, evaluated per operation — same token, six outcomes, each rule-tagged |
+| 2 | [`02_agent_device_flow.py`](demos/02_agent_device_flow.py) | AI-agent / CI onboarding | Full RFC 8628 flow: pending → slow_down → human approval → token delivered once |
+| 3 | [`03_revocation_and_blast_radius.py`](demos/03_revocation_and_blast_radius.py) | Security | Issue, prove, revoke — every op fails closed immediately; only a hash is stored |
+| 4 | [`04_scope_ladder.py`](demos/04_scope_ladder.py) | OSS maintainers | The access matrix of the five scopes across read/push/force/delete |
+| 5 | [`05_pre_receive_hook.py`](demos/05_pre_receive_hook.py) | CI / git server operators | The drop-in `pre-receive` loop: a batch push denied atomically, then accepted |
+
 ## Composes with the suite
 
 Pair with [`agentledger`](https://github.com/cognis-digital/agentledger) to get a signed, tamper-evident record of every authorized (and denied) git operation, and with [`sentinel-policy`](https://github.com/cognis-digital/sentinel-policy) for an org-wide governance doctrine above the branch policy.
@@ -98,11 +130,11 @@ Pair with [`agentledger`](https://github.com/cognis-digital/agentledger) to get 
 
 ```bash
 pip install -e ".[dev]"
-pytest -q          # 19 tests
+pytest -q          # 25 tests
 ```
 
 ## License
 
-Apache-2.0. © Cognis Digital.
+COCL (Cognis Open Collaboration License). © Cognis Digital.
 
 > Status: v0.1 — runnable and tested. Roadmap: ancestry-aware force-push detection in the hook, token TTL + auto-expiry, CODEOWNERS-style path rules, and a smart-HTTP proxy mode for hosts without server-side hooks.
