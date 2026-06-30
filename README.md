@@ -113,14 +113,15 @@ Decision rules (each tagged for logging): `auth`, `namespace`, `read`, `push`, `
 
 ## Demos
 
-Five runnable scenarios in [`demos/`](demos/), each for a different audience.
-Every one builds its own throwaway in-memory warden (no files, no network),
-exits 0, and doubles as a smoke test. See [`docs/DEMOS.md`](docs/DEMOS.md) for
-the full write-up and [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the
-pieces fit together.
+Twenty runnable scenarios in [`demos/`](demos/), spanning the happy path, the
+device-flow failure modes, the authorization edges, operations/audit, and an
+end-to-end agent fleet. Every one builds its own throwaway in-memory warden (or
+a self-cleaning temp DB), exits 0, and doubles as a smoke test. See
+[`docs/DEMOS.md`](docs/DEMOS.md) for the full write-up and
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the pieces fit together.
 
 ```bash
-PYTHONUTF8=1 python demos/run_all.py     # all five, end to end
+PYTHONUTF8=1 python demos/run_all.py     # all twenty, end to end
 ```
 
 | # | Scenario | Audience | Shows |
@@ -130,6 +131,12 @@ PYTHONUTF8=1 python demos/run_all.py     # all five, end to end
 | 3 | [`03_revocation_and_blast_radius.py`](demos/03_revocation_and_blast_radius.py) | Security | Issue, prove, revoke — every op fails closed immediately; only a hash is stored |
 | 4 | [`04_scope_ladder.py`](demos/04_scope_ladder.py) | OSS maintainers | The access matrix of the five scopes across read/push/force/delete |
 | 5 | [`05_pre_receive_hook.py`](demos/05_pre_receive_hook.py) | CI / git server operators | The drop-in `pre-receive` loop: a batch push denied atomically, then accepted |
+| 6–8 | device-flow paths | SRE / approvers / client authors | Timeout & stable `expired_token`, operator denial, and `slow_down` backoff |
+| 9–12 | authorization edges | Multi-tenant / governance | Namespace isolation, force-push policy, protected-delete guard, blocked escalation |
+| 13–16 | operations & security | Audit / hardening | Token lifecycle, mixed-ref hook batch, hash-storage proof, invalid-input handling |
+| 17–20 | end-to-end & fleet | Platform / fleet ops | Agent→CI pipeline, custom policies, persistence roundtrip, multi-agent revocation |
+
+The full per-scenario table is in [`docs/DEMOS.md`](docs/DEMOS.md).
 
 ## Composes with the suite
 
@@ -139,7 +146,7 @@ Pair with [`agentledger`](https://github.com/cognis-digital/agentledger) to get 
 
 ```bash
 pip install -e ".[dev]"
-pytest -q          # 25 tests
+pytest -q          # 123 tests (library + CLI + demo smoke tests)
 ```
 
 ## License

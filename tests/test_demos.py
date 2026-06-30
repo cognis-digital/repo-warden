@@ -18,6 +18,21 @@ SCENARIOS = [
     "03_revocation_and_blast_radius",
     "04_scope_ladder",
     "05_pre_receive_hook",
+    "06_device_flow_timeout",
+    "07_device_flow_denied",
+    "08_slow_down_backoff",
+    "09_namespace_isolation",
+    "10_force_push_policy",
+    "11_protected_delete_guard",
+    "12_scope_escalation_blocked",
+    "13_token_lifecycle",
+    "14_hook_mixed_batch",
+    "15_hash_storage_proof",
+    "16_invalid_input_handling",
+    "17_agent_ci_pipeline",
+    "18_custom_policy",
+    "19_persistence_roundtrip",
+    "20_multi_agent_fleet",
 ]
 
 

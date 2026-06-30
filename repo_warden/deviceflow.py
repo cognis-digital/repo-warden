@@ -22,7 +22,7 @@ import secrets
 import time
 from typing import Optional
 
-from .store import Store
+from .store import Store, VALID_SCOPES
 
 _USER_CODE_ALPHABET = "BCDFGHJKLMNPQRSTVWXZ23456789"  # no vowels/ambiguous chars
 DEFAULT_LIFETIME = 600   # seconds
@@ -44,6 +44,15 @@ class DeviceFlow:
 
     def start_authorization(self, client_id: str, scopes: set[str], namespace: str = "*",
                             *, now: Optional[float] = None) -> dict:
+        if not client_id:
+            raise ValueError("client_id is required")
+        if not scopes:
+            raise ValueError("at least one scope is required")
+        # Validate scopes up front so an invalid grant is rejected before a
+        # device_code/user_code is ever minted (no orphan pending rows).
+        bad = set(scopes) - VALID_SCOPES
+        if bad:
+            raise ValueError(f"unknown scopes: {sorted(bad)}")
         now = time.time() if now is None else now
         device_code = secrets.token_urlsafe(32)
         user_code = _user_code()
@@ -71,6 +80,8 @@ class DeviceFlow:
         ).fetchone()
 
     def poll(self, device_code: str, *, now: Optional[float] = None) -> dict:
+        if not device_code:
+            return {"error": "invalid_grant"}
         now = time.time() if now is None else now
         row = self._row(device_code)
         if not row:
@@ -83,10 +94,29 @@ class DeviceFlow:
             self.store.conn.commit()
             return {"error": "expired_token"}
 
+        # a request already marked expired must keep reporting expired_token, not
+        # fall through to invalid_grant on subsequent polls (RFC 8628 §3.5)
+        if status == "expired":
+            return {"error": "expired_token"}
+
         if status == "denied":
             return {"error": "access_denied"}
 
-        # enforce the minimum polling interval (RFC 8628 §3.5 slow_down)
+        if status == "approved":
+            # The grant is ready: deliver the token exactly once and don't make
+            # the client wait out another poll interval. The slow_down throttle
+            # (RFC 8628 §3.5) only governs *waiting* on a pending request — once
+            # the user has approved, an extra interval would just delay pickup.
+            if delivered:
+                self.store.conn.execute(
+                    "UPDATE device_requests SET delivered_token=NULL, last_poll=? "
+                    "WHERE device_code=?", (now, device_code))
+                self.store.conn.commit()
+                return {"access_token": delivered, "token_type": "Bearer",
+                        "scope": scopes, "namespace": ns}
+            return {"error": "access_denied"}  # already delivered / no token
+
+        # status == 'pending': enforce the minimum polling interval (slow_down)
         if last_poll is not None and (now - last_poll) < interval:
             return {"error": "slow_down"}
         self.store.conn.execute(
@@ -96,20 +126,11 @@ class DeviceFlow:
         if status == "pending":
             return {"error": "authorization_pending"}
 
-        if status == "approved":
-            # deliver the token exactly once, then clear the plaintext
-            if delivered:
-                self.store.conn.execute(
-                    "UPDATE device_requests SET delivered_token=NULL WHERE device_code=?",
-                    (device_code,))
-                self.store.conn.commit()
-                return {"access_token": delivered, "token_type": "Bearer",
-                        "scope": scopes, "namespace": ns}
-            return {"error": "access_denied"}  # already delivered / no token
-
         return {"error": "invalid_grant"}
 
     def approve(self, user_code: str, subject: str, *, now: Optional[float] = None) -> bool:
+        if not user_code or not subject:
+            return False
         row = self.store.conn.execute(
             "SELECT device_code, scopes, namespace, status, expires_at FROM device_requests "
             "WHERE user_code=?",
@@ -132,6 +153,8 @@ class DeviceFlow:
         return True
 
     def deny(self, user_code: str) -> bool:
+        if not user_code:
+            return False
         cur = self.store.conn.execute(
             "UPDATE device_requests SET status='denied' WHERE user_code=? AND status='pending'",
             (user_code.upper(),),

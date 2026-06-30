@@ -59,6 +59,8 @@ class Warden:
         self.policy = policy or BranchPolicy()
 
     def authorize(self, token: str, action: Action) -> Decision:
+        if not action.repo:
+            return Decision(False, "namespace", "no repository specified")
         info = self.store.authenticate(token)
         if info is None:
             return Decision(False, "auth", "invalid or revoked token")

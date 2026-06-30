@@ -41,7 +41,31 @@ human `approve`s out of band. The standard RFC error codes are returned verbatim
 — `authorization_pending`, `slow_down` (the polling interval is enforced),
 `expired_token`, `access_denied` — so off-the-shelf device-flow clients work
 unchanged. On approval the grant mints a scoped token via the store and delivers
-the plaintext **exactly once**.
+the plaintext **exactly once**. The `slow_down` throttle governs only *pending*
+polling — once a request is approved, the token is delivered on the very next
+poll without making the client wait out another interval. A request that lapses
+is marked `expired` and keeps reporting `expired_token` on every subsequent poll
+(it never decays to `invalid_grant`), so a client's poll loop sees a stable
+terminal state and exits cleanly. Requested scopes are validated *before* any
+`device_code` is minted, so an invalid grant never leaves an orphan pending row.
+
+## Edge cases & invariants
+
+These are the fail-closed guarantees the test suite pins (see `tests/`):
+
+- **Inputs fail closed, loudly.** `issue_token` rejects an empty scope set, a
+  blank label, a blank namespace, and any unknown scope *atomically* (a mixed
+  valid/invalid set writes nothing). `authenticate("")` and an empty/missing
+  repo return None / a `namespace` deny rather than matching anything.
+- **Namespace before scope.** Even a `repo:admin` token is denied with rule
+  `namespace` outside its glob — privilege never crosses the tenant boundary.
+- **Protection before force.** A protected-branch push is denied on
+  `protected-branch` before the force gate is even consulted.
+- **Revocation is terminal.** A revoked token authenticates to nothing
+  immediately; re-revoking is a safe no-op (returns False).
+- **Device-flow denial is final.** A denied `user_code` cannot be salvaged by a
+  later `approve`; a double-approve returns False; an expired request cannot be
+  approved.
 
 ### Warden (`repo_warden/warden.py`)
 The decision engine. Given a presented token and an intended `Action`

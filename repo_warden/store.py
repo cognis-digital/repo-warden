@@ -84,6 +84,13 @@ class Store:
     # ---- tokens ----------------------------------------------------------
     def issue_token(self, label: str, scopes: set[str], namespace: str = "*",
                     *, now: Optional[float] = None) -> tuple[str, TokenInfo]:
+        if not label or not label.strip():
+            raise ValueError("token label is required")
+        if not namespace or not namespace.strip():
+            raise ValueError("namespace is required (use '*' for all repos)")
+        scopes = set(scopes)
+        if not scopes:
+            raise ValueError("at least one scope is required")
         bad = scopes - VALID_SCOPES
         if bad:
             raise ValueError(f"unknown scopes: {sorted(bad)}")
@@ -99,6 +106,8 @@ class Store:
         return token, info
 
     def authenticate(self, token: str) -> Optional[TokenInfo]:
+        if not token:
+            return None
         row = self.conn.execute(
             "SELECT id, label, scopes, namespace, created_at, revoked_at FROM tokens "
             "WHERE token_hash=?",
