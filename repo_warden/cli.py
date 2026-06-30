@@ -69,7 +69,9 @@ def cmd_token(args) -> int:
     store = _store(args)
     try:
         if args.tsub == "issue":
-            token, info = store.issue_token(args.label, set(args.scopes.split()), args.namespace)
+            token, info = store.issue_token(
+                args.label, set(args.scopes.split()), args.namespace,
+                expires_in=getattr(args, "expires_in", None))
             _print({"token": token, **info.as_dict(),
                     "note": "store this token now; only its hash is kept"})
         elif args.tsub == "list":
@@ -152,6 +154,8 @@ def build_parser() -> argparse.ArgumentParser:
     tsub = pt.add_subparsers(dest="tsub", required=True)
     t1 = tsub.add_parser("issue"); _add_db(t1); t1.add_argument("--label", required=True)
     t1.add_argument("--scopes", default="repo:read"); t1.add_argument("--namespace", default="*")
+    t1.add_argument("--expires-in", dest="expires_in", type=float, default=None,
+                    help="token lifetime in seconds (default: never expires)")
     t2 = tsub.add_parser("list"); _add_db(t2)
     t3 = tsub.add_parser("revoke"); _add_db(t3); t3.add_argument("--id", type=int, required=True)
     pt.set_defaults(func=cmd_token)

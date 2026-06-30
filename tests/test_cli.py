@@ -70,6 +70,14 @@ def test_token_issue_bad_scope_raises(db):
         run(["token", "issue", "--label", "bot", "--scopes", "repo:nope"], db)
 
 
+def test_token_issue_with_expiry(db):
+    code, out = run(["token", "issue", "--label", "ci", "--scopes", "branch:push",
+                     "--namespace", "acme/*", "--expires-in", "600"], db)
+    assert code == 0
+    assert "expires_at" in out
+    assert out["active"] is True
+
+
 # ---------------------------------------------------------------- authorize
 
 def test_authorize_allow_returns_zero(db):
