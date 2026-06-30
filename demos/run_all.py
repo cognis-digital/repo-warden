@@ -33,6 +33,7 @@ SCENARIOS = [
     "18_custom_policy",
     "19_persistence_roundtrip",
     "20_multi_agent_fleet",
+    "21_token_expiry",
 ]
 
 

@@ -113,15 +113,15 @@ Decision rules (each tagged for logging): `auth`, `namespace`, `read`, `push`, `
 
 ## Demos
 
-Twenty runnable scenarios in [`demos/`](demos/), spanning the happy path, the
-device-flow failure modes, the authorization edges, operations/audit, and an
-end-to-end agent fleet. Every one builds its own throwaway in-memory warden (or
-a self-cleaning temp DB), exits 0, and doubles as a smoke test. See
-[`docs/DEMOS.md`](docs/DEMOS.md) for the full write-up and
+Twenty-one runnable scenarios in [`demos/`](demos/), spanning the happy path, the
+device-flow failure modes, the authorization edges, operations/audit, short-lived
+credentials, and an end-to-end agent fleet. Every one builds its own throwaway
+in-memory warden (or a self-cleaning temp DB), exits 0, and doubles as a smoke
+test. See [`docs/DEMOS.md`](docs/DEMOS.md) for the full write-up and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the pieces fit together.
 
 ```bash
-PYTHONUTF8=1 python demos/run_all.py     # all twenty, end to end
+PYTHONUTF8=1 python demos/run_all.py     # all twenty-one, end to end
 ```
 
 | # | Scenario | Audience | Shows |
@@ -134,7 +134,7 @@ PYTHONUTF8=1 python demos/run_all.py     # all twenty, end to end
 | 6–8 | device-flow paths | SRE / approvers / client authors | Timeout & stable `expired_token`, operator denial, and `slow_down` backoff |
 | 9–12 | authorization edges | Multi-tenant / governance | Namespace isolation, force-push policy, protected-delete guard, blocked escalation |
 | 13–16 | operations & security | Audit / hardening | Token lifecycle, mixed-ref hook batch, hash-storage proof, invalid-input handling |
-| 17–20 | end-to-end & fleet | Platform / fleet ops | Agent→CI pipeline, custom policies, persistence roundtrip, multi-agent revocation |
+| 17–21 | end-to-end & fleet | Platform / fleet ops | Agent→CI pipeline, custom policies, persistence roundtrip, multi-agent revocation, self-expiring tokens |
 
 The full per-scenario table is in [`docs/DEMOS.md`](docs/DEMOS.md).
 
@@ -146,7 +146,7 @@ Pair with [`agentledger`](https://github.com/cognis-digital/agentledger) to get 
 
 ```bash
 pip install -e ".[dev]"
-pytest -q          # 123 tests (library + CLI + demo smoke tests)
+pytest -q          # 136 tests (library + CLI + expiry + demo smoke tests)
 ```
 
 ## License

@@ -30,8 +30,12 @@ A single SQLite database with two tables: `tokens` and `device_requests`. Tokens
 carry a scope set and a repo **namespace** glob (`acme/*`). Only a salted
 BLAKE2b hash of each token is stored, so a database leak does not leak a usable
 credential, and `revoke_token` is immediate — the next `authenticate` fails
-closed. The store is the source of truth; it can be `:memory:` (the demos and
-tests) or a file you mount into a hook.
+closed. Tokens may also be **short-lived**: `issue_token(expires_in=N)` records
+an `expires_at`, and a token past its lifetime fails closed exactly like a
+revoked one (no cleanup job needed). `is_active(now)` folds revocation and expiry
+into one check. The store is the source of truth; it can be `:memory:` (the demos
+and tests) or a file you mount into a hook — old databases are migrated forward
+automatically when opened.
 
 ### Device flow (`repo_warden/deviceflow.py`)
 The OAuth 2.0 Device Authorization Grant (RFC 8628), the headless "here's a

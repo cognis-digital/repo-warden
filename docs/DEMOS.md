@@ -1,12 +1,13 @@
 # Demos
 
-Twenty runnable scenarios in [`../demos/`](../demos/), each targeting a different
-audience or failure mode. Every scenario builds its own throwaway **in-memory**
-warden (or a self-cleaning temp DB), so you can run them in any order or on their
-own — and they double as smoke tests under `pytest` (`tests/test_demos.py`).
+Twenty-one runnable scenarios in [`../demos/`](../demos/), each targeting a
+different audience or failure mode. Every scenario builds its own throwaway
+**in-memory** warden (or a self-cleaning temp DB), so you can run them in any
+order or on their own — and they double as smoke tests under `pytest`
+(`tests/test_demos.py`).
 
 ```bash
-PYTHONUTF8=1 python demos/run_all.py               # all twenty, end to end
+PYTHONUTF8=1 python demos/run_all.py               # all twenty-one, end to end
 PYTHONUTF8=1 python demos/02_agent_device_flow.py  # or just one
 ```
 
@@ -54,6 +55,7 @@ PYTHONUTF8=1 python demos/02_agent_device_flow.py  # or just one
 | 18 | [`18_custom_policy.py`](../demos/18_custom_policy.py) | Repo conventions | The same push set against trunk-based, GitFlow, and env-promotion `BranchPolicy` objects — protection is configuration, not a code fork. |
 | 19 | [`19_persistence_roundtrip.py`](../demos/19_persistence_roundtrip.py) | Production deployment | Issue + revoke against a real on-disk SQLite store, "restart" the process, reopen, and show the identical active/revoked picture. Cleans up its temp file. |
 | 20 | [`20_multi_agent_fleet.py`](../demos/20_multi_agent_fleet.py) | Agent-fleet operators | Provision a fleet of narrowly-scoped agent tokens, run each agent's signature op, revoke one rogue agent, and re-run — the blast radius is a single row; the rest of the fleet keeps working. |
+| 21 | [`21_token_expiry.py`](../demos/21_token_expiry.py) | Short-lived credentials | `issue_token(expires_in=N)` mints a token that fails closed once its lifetime elapses — no revocation call needed. Checked along a deterministic clock; a never-expiring token is left untouched, and `is_active(now)` folds revocation + expiry into one check. |
 
 ---
 
